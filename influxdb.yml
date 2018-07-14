@@ -1,0 +1,113 @@
+stack: ohtu/influxdb
+version: 1.0.0
+description: InfluxDB stack.
+expose: api
+
+variables:
+  reset_passwords:
+    type: boolean
+    from:
+      prompt: Reset all default passwords during initial stack installation?
+
+  influxdb_image:
+    type: string
+    default: influxdb:1.5-alpine
+    from:
+      prompt: InfluxDB image
+
+  affinity:
+    type: string
+    required: false
+    from:
+      prompt: Affinity rule for InfluxDB
+
+  influxdb_admin_user:
+    type: string
+    default: admin
+    from:
+      prompt: Username for admin user
+    to:
+      vault: influxdb_admin_user
+
+  influxdb_admin_user_password:
+    only_if: reset_passwords
+    type: string
+    from:
+      vault: influxdb_admin_user_password
+      random_string: 40
+    to:
+      vault: influxdb_admin_user_password
+
+  influxdb_telegraf_user:
+    type: string
+    default: telegraf
+    from:
+      prompt: Username for telegraf user
+    to:
+      vault: influxdb_telegraf_user
+
+  influxdb_telegraf_user_password:
+    only_if: reset_passwords
+    type: string
+    from:
+      vault: influxdb_telegraf_user_password
+      random_string: 40
+    to:
+      vault: influxdb_telegraf_user_password
+
+  influxdb_grafana_user:
+    type: string
+    default: grafana
+    from:
+      prompt: Username for grafana user
+    to:
+      vault: influxdb_grafana_user
+
+  influxdb_grafana_user_password:
+    only_if: reset_passwords
+    type: string
+    from:
+      vault: influxdb_grafana_user_password
+      random_string: 40
+    to:
+      vault: influxdb_grafana_user_password
+
+services:
+  api:
+    image: {{ influxdb_image }}
+    stateful: true
+    instances: 1
+
+    deploy:
+      strategy: ha
+      wait_for_port: 8086
+
+    environment:
+      - INFLUXDB_DB="telegraf"
+      - INFLUXDB_ADMIN_USER={{ influxdb_admin_user }}
+      - INFLUXDB_USER={{ influxdb_telegraf_user }}
+      - INFLUXDB_READ_USER={{ influxdb_grafana_user }}
+
+    secrets:
+      - secret: influxdb_admin_user_password
+        name: INFLUXDB_ADMIN_PASSWORD
+        type: env
+      - secret: influxdb_telegraf_user_password
+        name: INFLUXDB_USER_PASSWORD
+        type: env
+      - secret: influxdb_grafana_user_password
+        name: INFLUXDB_READ_USER_PASSWORD
+        type: env
+
+    affinity:
+      # {% if affinity %}
+      - {{ affinity }}
+      # {% endif %}
+
+    volumes:
+      - influxdb-data:/var/lib/influxdb
+
+volumes:
+  influxdb-data:
+    external:
+      name: influxdb-data

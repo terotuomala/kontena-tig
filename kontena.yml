@@ -1,0 +1,55 @@
+stack: ohtu/tig
+version: 1.0.0
+description: TIG stack (Telegraf + InfluxDB + Grafana) for gathering and displaying metrics from nodes.
+depends:
+    influxdb:
+      stack: influxdb.yml
+
+    grafana:
+      stack: grafana.yml
+
+variables:
+  influxdb_host:
+    type: string
+    default: api.tig-influxdb.${GRID}.kontena.local
+    from:
+      prompt: InfluxDB host
+
+  affinity:
+    type: string
+    required: false
+    from:
+      prompt: Affinity rule for Telegraf
+
+services:
+  telegraf:
+    image: terotuomala/telegraf:latest
+    privileged: true
+    stateful: true
+    deploy:
+      strategy: daemon
+
+    environment:
+      - INFLUXDB_URL={{ influxdb_host }}
+      - INFLUXDB_DB=telegraf
+
+    secrets:
+      - secret: influxdb_telegraf_user
+        name: INFLUXDB_TELEGRAF_USERNAME
+        type: env
+      - secret: influxdb_telegraf_user_password
+        name: INFLUXDB_TELEGRAF_PASSWORD
+        type: env
+
+    affinity:
+      # {% if affinity %}
+      - {{ affinity }}
+      # {% endif %}
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  graylog-data:
+    external:
+      name: graylog-data

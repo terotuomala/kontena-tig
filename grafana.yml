@@ -1,0 +1,127 @@
+stack: ohtu/grafana
+version: 1.0.0
+description: Grafana stack.
+expose: ui
+
+variables:
+  reset_passwords:
+    type: boolean
+    from:
+      prompt: Reset all default passwords during initial stack installation?
+
+  affinity:
+    type: string
+    required: false
+    from:
+      prompt: Affinity rule for Grafana
+
+  grafana_admin_username:
+    type: string
+    default: admin
+    from:
+      prompt: Username for admin user
+    to:
+      vault: grafana_admin_username
+
+  grafana_admin_password:
+    only_if: reset_passwords
+    type: string
+    from:
+      vault: grafana_admin_password
+      random_string: 40
+    to:
+      vault: grafana_admin_password
+
+  grafana_users_allow_sign_up:
+    type: string
+    default: false
+    from:
+      prompt: Allow users to sign up?
+
+  grafana_install_plugins:
+    type: string
+    default: grafana-clock-panel,grafana-simple-json-datasource
+    from:
+      prompt: Plugins to be installed
+
+  grafana_influxdb_host:
+    type: string
+    default: api.tig-influxdb.${GRID}.kontena.local
+    from:
+      prompt: InfluxDB host
+
+  loadbalancer:
+    type: string
+    from:
+      env: LOADBALANCER
+      service_link:
+        prompt: Choose a loadbalancer
+        image: kontena/lb
+
+  virtual_host:
+    only_if:
+      - loadbalancer
+    type: string
+    from:
+      env: VIRTUAL_HOSTS
+      prompt: Domain name for Grafana
+
+services:
+  ui:
+    image: terotuomala/grafana:latest
+    stateful: true
+    instances: 1
+
+    deploy:
+      strategy: ha
+      wait_for_port: 3000
+
+    secrets:
+      - secret: grafana_admin_username
+        name: GF_SECURITY_ADMIN_USER
+        type: env
+      - secret: grafana_admin_password
+        name: GF_SECURITY_ADMIN_PASSWORD
+        type: env
+      - secret: influxdb_grafana_user
+        name: INFLUXDB_READ_USER
+        type: env
+      - secret: influxdb_grafana_user_password
+        name: INFLUXDB_READ_USER_PASSWORD
+        type: env
+
+    environment:
+      - GF_USERS_ALLOW_SIGN_UP={{ grafana_users_allow_sign_up }}
+      - GF_INSTALL_PLUGINS={{ grafana_install_plugins }}
+      - INFLUXDB_URL={{ grafana_influxdb_host }}
+      - KONTENA_LB_INTERNAL_PORT=3000
+      - KONTENA_LB_VIRTUAL_HOSTS={{ virtual_host }}
+
+    hooks:
+      post_start:
+        - name: Wait until Grafana service is started
+          cmd: while ! curl --output /dev/null --silent --head --fail http://localhost:3000; do sleep 1 && echo -n Waiting for port 3000..; done;
+          instances: "*"
+          oneshot: true
+        - name: Create datasource for InfluxDB
+          cmd: curl -u $$GF_SECURITY_ADMIN_USER:$$GF_SECURITY_ADMIN_PASSWORD -X POST -H "Content-Type:application/json;charset=UTF-8" -d '{"name":"Kontena-InfluxDB","isDefault":true,"type":"influxdb","url":"'"http://$$INFLUXDB_URL:8086"'","user":"'"$$INFLUXDB_READ_USER"'","password":"'"$$INFLUXDB_READ_USER_PASSWORD"'","database":"telegraf","access":"proxy","basicAuth":false}' http://localhost:3000/api/datasources
+          instances: "*"
+          oneshot: true
+
+    links:
+      # {% if loadbalancer %}
+      - ${loadbalancer}
+      # {% endif %}
+
+    affinity:
+      # {% if affinity %}
+      - {{ affinity }}
+      # {% endif %}
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:
+    external:
+      name: grafana-data
