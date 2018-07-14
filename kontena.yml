@@ -32,6 +32,7 @@ services:
     environment:
       - INFLUXDB_URL={{ influxdb_host }}
       - INFLUXDB_DB=telegraf
+      - HOST_PROC=/host/proc
 
     secrets:
       - secret: influxdb_telegraf_user
@@ -48,3 +49,5 @@ services:
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - /proc:/host/proc
+      - /var/run/utmp:/var/run/utmp
