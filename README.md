@@ -12,10 +12,21 @@ Install the stack:
 kontena stack install
 ```
 
-### Additional information
-- Database `telegraf` will be created to InfluxDB.
-- InfluxDB users `admin`, `grafana` (read permissions) and `telegraf` (read and write permissions) will be created and their passwords will be stored to Kontena Vault.
-- Grafana user `admin` will be created and it's password will be stored to Kontena Vault.
+### During the installation
+It is possible to reset all passwords which will be stored to Kontena Vault every time when installing or upgrading the stack.
+
+###### InfluxDB
+- Database `telegraf` will be created.
+- Users `admin`, `grafana` (read permissions) and `telegraf` (read and write permissions) will be created and their passwords will be stored to Kontena Vault.
+
+###### Grafana
+- a custom Grafana image is being used which includes configuration files for dashboard provisioning and the actual dashboard for displaying metrics from nodes.
+- User `admin` for the UI will be created and it's password will be stored to Kontena Vault.
+- Datasource (InfluxDB) will be created using `grafana` user.
+
+###### Telegraf
+- a custom Telegraf image is being used which includes configuration file that read's certain values from environment variables e.g. InfluxDB username, password and url.
 - Telegraf agent authenticates to InfluxDB using `telegraf` user.
-- Datasource (InfluxDB) for Grafana will be created using `grafana` user.
-- Dashboard for Grafana displaying metrics from nodes will be created.
+
+### Result
+![kontena-dashboard](grafana/kontena-dashboard.PNG)
