@@ -25,8 +25,8 @@ It is possible to reset all passwords which will be stored to Kontena Vault ever
 - Datasource (InfluxDB) will be created using `grafana` user.
 
 ###### Telegraf
-- a custom Telegraf image is being used which includes configuration file that read's certain values from environment variables e.g. InfluxDB username, password and url.
+- a custom Telegraf image is being used which includes configuration file that reads certain values from environment variables e.g. InfluxDB username, password and url.
 - Telegraf agent authenticates to InfluxDB using `telegraf` user.
 
-### Result
+### How does it look
 ![kontena-dashboard](grafana/kontena-dashboard.PNG)
