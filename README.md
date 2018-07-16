@@ -1,7 +1,7 @@
 # TIG stack (Telegraf + InfluxDB + Grafana) for Kontena environment
 Kontena Stack for gathering and displaying metrics from nodes.
 
-## Usage with Kontena
+### Usage with Kontena
 InfluxDB and Grafana needs instance scoped volumes to persist their data. Create the volumes:
 ```
 kontena volume create --scope instance --driver local influxdb-data
@@ -12,7 +12,7 @@ Install the stack:
 kontena stack install
 ```
 
-## During the installation
+### During the installation
 It is possible to reset all passwords which will be stored to Kontena Vault every time when installing or upgrading the stack.
 
 ##### InfluxDB
@@ -30,5 +30,5 @@ It is possible to reset all passwords which will be stored to Kontena Vault ever
 - a custom Telegraf image is being used which includes configuration file that reads certain values from environment variables e.g. InfluxDB username, password and url.
 - Telegraf agent authenticates to InfluxDB using `telegraf` user.
 
-## How does it look
+### How does it look
 ![kontena-dashboard](grafana/kontena-dashboard.PNG)
